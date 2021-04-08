@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: line-notification-deployment
+  namespace: utility
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: line-notification-deployment
+  template:
+    metadata:
+      labels:
+        app: line-notification-deployment
+    spec:
+      containers:
+        - name: line-notification-deployment
+          image: kcskbcnd93.kcs:5000/utility/line-notification:0.0.1
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: line-notification-configmap
+          volumeMounts:
+            - name: line-notification-test-volume
+              mountPath: /app/test
+      volumes:
+        - name: line-notification-test-volume
+          secret:
+            secretName: line-notification-test

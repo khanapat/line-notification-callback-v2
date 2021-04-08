@@ -1,0 +1,13 @@
+# vscode config
+.vscode
+
+# vscode debug binaries
+__debug_bin
+
+# golang modules vendor folder
+vendor
+
+# other
+keystore
+
+goapp

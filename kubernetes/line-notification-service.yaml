@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: line-notification-service
+  namespace: utility
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 31000
+  selector:
+    app: line-notification-deployment

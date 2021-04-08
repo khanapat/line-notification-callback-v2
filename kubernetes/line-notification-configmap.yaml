@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: line-notification-configmap
+  namespace: utility
+data:
+  APP_NAME: "line-notification"
+  APP_PORT: "9090"
+  APP_TIMEOUT: "60s"
+  APP_CONTEXT: "/ktb/blockchain/v1/line"
+  LOG_LEVEL: "debug"
+  LOG_ENV: "dev"
