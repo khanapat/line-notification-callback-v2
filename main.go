@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"line-notification/internal/handler"
+	"line-notification/internal/line"
 	"line-notification/logz"
 	"line-notification/middleware"
 	"line-notification/notification"
+	"line-notification/reply"
 	"log"
 	"os"
 	"os/signal"
@@ -42,15 +44,50 @@ func main() {
 		log.Fatal(err)
 	}
 
+	lineClient, err := line.NewLineConn()
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
 	middle := middleware.NewMiddleware(logger)
 
-	line := app.Group(viper.GetString("app.context"))
+	lineApp := app.Group(viper.GetString("app.context"))
 
-	line.Use(middle.JSONMiddleware())
-	line.Use(middle.ContextLocaleMiddleware())
-	line.Use(middle.LoggingMiddleware())
+	lineApp.Use(middle.JSONMiddleware())
+	lineApp.Use(middle.ContextLocaleMiddleware())
+	lineApp.Use(middle.LoggingMiddleware())
 
-	line.Get("/notification/message", handler.Helper(notification.NewNotificationHandler().PushMessage, logger))
+	callback := lineApp.Group("/")
+
+	callback.Use(middle.LineAuthenticationMiddleware())
+
+	notiHandler := notification.NewNotificationHandler(
+		notification.NewPushTextMessageFn(lineClient),
+		notification.NewPushStickerMessageFn(lineClient),
+		notification.NewPushImageMessageFn(lineClient),
+		notification.NewPushVideoMessageFn(lineClient),
+		notification.NewPushAudioMessageFn(lineClient),
+		notification.NewPushLocationMessageFn(lineClient),
+		notification.NewPushButtonsTemplateMessageFn(lineClient),
+		notification.NewPushConfirmTemplateMessageFn(lineClient),
+	)
+
+	replyHandler := reply.NewReplyhandler(
+		reply.NewGetProfileClientFn(lineClient),
+		reply.NewReplyTextMessageFn(lineClient),
+		reply.NewReplyStickerMessageFn(lineClient),
+	)
+
+	lineApp.Post("/notification/text", handler.Helper(notiHandler.TextNotification, logger))
+	lineApp.Post("/notification/sticker", handler.Helper(notiHandler.StickerNotification, logger))
+	lineApp.Post("/notification/image", handler.Helper(notiHandler.ImageNotification, logger))
+	lineApp.Post("/notification/video", handler.Helper(notiHandler.VideoNotification, logger))
+	lineApp.Post("/notification/audio", handler.Helper(notiHandler.AudioNotification, logger))
+	lineApp.Post("/notification/location", handler.Helper(notiHandler.LocationNotification, logger))
+	lineApp.Post("/notification/template/buttons", handler.Helper(notiHandler.ButtonsTemplateNotification, logger))
+	lineApp.Post("/notification/template/confirm", handler.Helper(notiHandler.ConfirmTemplateNotification, logger))
+
+	callback.Post("/callback", handler.Helper(replyHandler.CallbackReply, logger))
 
 	logger.Info(fmt.Sprintf("⇨ http server started on [::]:%s", viper.GetString("app.port")))
 
@@ -82,6 +119,10 @@ func initViper() {
 
 	viper.SetDefault("log.level", "debug")
 	viper.SetDefault("log.env", "dev")
+
+	viper.SetDefault("line.channel.secret", "708b65656b5f8d0ddbedc24db6e483fe")
+	viper.SetDefault("line.channel.access-token", "cdsyUJnmmWbfU8zHbWb4pZVjIw8jrMIXOceX0zBP8e/keH6KAnt4TyG6ZCXGstYP03m68Q1BZOU/7/DvmTyKSDR4EnxLxyAuVq94zQjT6HrjI0bMf9XW5spws2hwmD2ebD+OGHKrVVR3u9i2VlrXCAdB04t89/1O/w1cDnyilFU=")
+	// viper.SetDefault("line.user-id", "U7f23c5963e6ef29e206e23d7b785660f")
 
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

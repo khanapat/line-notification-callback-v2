@@ -29,11 +29,11 @@ func (c *Ctx) JSON(data interface{}) error {
 	if c.Context().Response.StatusCode() > 299 {
 		switch v := data.(type) {
 		case map[string]string:
-			c.logger.Error(v["error"])
+			c.logger.WithOptions(zap.AddCallerSkip(1)).Error(v["error"])
 		case *response.ErrResponse:
-			c.logger.Error(v.Error)
+			c.logger.WithOptions(zap.AddCallerSkip(1)).Error(v.Error)
 		case error:
-			c.logger.Error(v.Error())
+			c.logger.WithOptions(zap.AddCallerSkip(1)).Error(v.Error())
 		}
 	}
 	return c.Ctx.JSON(data)

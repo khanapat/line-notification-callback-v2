@@ -64,7 +64,7 @@ delete() {
 
 apply() {
     echo "##########################################################"
-    echo "############## Applying Sponsors Callback ################"
+    echo "############## Applying Line Notification ################"
     echo "##########################################################" 
 
     kubectl apply -f ./line-notification-configmap.yaml -n ${NAMESPACE}
